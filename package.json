@@ -42,5 +42,10 @@
     "typescript-eslint": "^8.62.0",
     "vite": "^8.1.1",
     "vitest": "^4.1.11"
-  }
+  },
+  "description": "A lightweight sprint-management SPA built as a frontend assessment: authenticate, plan work on a drag-and-drop Kanban board, and inspect live analytics.",
+  "main": "eslint.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

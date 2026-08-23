@@ -1,0 +1,236 @@
+openapi: 3.0.3
+info:
+  title: SprintDesk External API
+  description: |
+    HTTP contracts SprintDesk depends on. The app has no backend of its own;
+    it consumes two public demo services:
+
+    - **DummyJSON** - authentication (login, silent token refresh).
+    - **JSONPlaceholder** - notification polling (activity posts).
+
+    Access tokens are treated as short-lived (~10 min simulated TTL) by the
+    client regardless of the real expiry returned by these services.
+  version: 1.0.0
+
+servers:
+  - url: https://dummyjson.com
+    description: Authentication API (DummyJSON)
+  - url: https://jsonplaceholder.typicode.com
+    description: Notification polling API (JSONPlaceholder)
+
+tags:
+  - name: Auth
+    description: Login and token refresh (DummyJSON)
+  - name: Notifications
+    description: Activity-feed polling (JSONPlaceholder)
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Authenticate with username/password
+      description: |
+        Called by `services/auth.service.ts -> authService.login()` with
+        `skipAuth` (no bearer attachment or refresh handling). Returns a token
+        pair plus the authenticated user. The response shape is normalized
+        defensively because DummyJSON sometimes returns user fields flat and
+        sometimes nested under `userInfo`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              valid:
+                summary: Valid credentials
+                value:
+                  username: your-username
+                  password: your-password
+                  expiresInMins: 60
+      responses:
+        '200':
+          description: Token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid credentials
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      summary: Exchange a refresh token for a new token pair
+      description: |
+        Called by `authService.refreshTokens()` through the refresh handler
+        registered on the api client. Both tokens rotate on every call; the
+        old pair must be discarded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: New token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Refresh token missing, invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Invalid refresh token
+
+  /posts:
+    get:
+      tags: [Notifications]
+      operationId: pollPosts
+      summary: Fetch activity posts used as notifications
+      description: |
+        Polled every 30 s by `services/notification.service.ts` while the user
+        is authenticated and the tab is visible. Posts are transformed into
+        app notifications; dedupe happens client-side by `id`.
+      parameters:
+        - name: _limit
+          in: query
+          required: false
+          description: Maximum number of posts to return. The app always polls with 5.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            default: 5
+            example: 5
+      responses:
+        '200':
+          description: A list of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Post'
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          description: Account username.
+          example: your-username
+        password:
+          type: string
+          format: password
+          description: Account password. Never hardcoded or committed.
+          example: your-password
+        expiresInMins:
+          type: integer
+          description: Requested access-token lifetime in minutes.
+          default: 60
+          example: 60
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          description: The refresh token issued by the login endpoint.
+        expiresInMins:
+          type: integer
+          description: Requested access-token lifetime in minutes.
+          default: 60
+          example: 60
+
+    AuthResponse:
+      type: object
+      required: [accessToken, refreshToken]
+      description: >
+        Token pair plus the authenticated user. User fields may arrive flat on
+        the payload or nested under `userInfo`; clients handle both shapes.
+      properties:
+        accessToken:
+          type: string
+          description: Bearer credential for subsequent requests.
+        refreshToken:
+          type: string
+          description: Rotating credential used to obtain a new pair.
+        id:
+          type: integer
+          description: User id (flat shape).
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        image:
+          type: string
+          format: uri
+        userInfo:
+          $ref: '#/components/schemas/UserInfo'
+
+    UserInfo:
+      type: object
+      description: Nested user shape (alternative to flat user fields).
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        image:
+          type: string
+          format: uri
+
+    Post:
+      type: object
+      required: [userId, id, title, body]
+      properties:
+        userId:
+          type: integer
+          example: 1
+        id:
+          type: integer
+          description: Used as the notification dedupe key.
+          example: 1
+        title:
+          type: string
+          example: sunt aut facere repellat provident occaecati excepturi optio
+        body:
+          type: string
+          example: quia et suscipit suscipit recusandae consequuntur expedita
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Human-readable error description.

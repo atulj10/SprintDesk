@@ -80,3 +80,4 @@ src/
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — state management decisions, data flow, auth lifecycle.
 - [API.md](./API.md) — external endpoints used plus the internal service/repository surface.
+- [public/openapi.yaml](./public/openapi.yaml) — OpenAPI 3 spec (Swagger UI at `/swagger.html` during `npm run dev`).

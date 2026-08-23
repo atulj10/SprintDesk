@@ -1,5 +1,9 @@
 # API reference
 
+> **Machine-readable spec:** [`public/openapi.yaml`](./public/openapi.yaml)
+> (OpenAPI 3.0.3). View it in Swagger UI by running `npm run dev` and opening
+> <http://localhost:5173/swagger.html>.
+
 SprintDesk talks to two public demo APIs and exposes a small internal service
 layer on top of them. No backend of its own.
 
