@@ -58,6 +58,18 @@ See [.env.example](./.env.example):
 - `VITE_DUMMYJSON_BASE_URL` — auth API base (default `https://dummyjson.com`)
 - `VITE_JSONPLACEHOLDER_BASE_URL` — notification polling API base (default `https://jsonplaceholder.typicode.com`)
 
+## API list (Swagger UI)
+
+The external endpoints the app consumes are documented in an OpenAPI 3 spec, browsable through Swagger UI:
+
+1. Start the dev server:
+   ```bash
+   npm run dev
+   ```
+2. Open **<http://localhost:5173/swagger.html>** to browse the full endpoint list interactively (try requests, inspect schemas).
+
+The raw spec is served at <http://localhost:5173/openapi.yaml> and lives in [public/openapi.yaml](./public/openapi.yaml) — edit that file and refresh the page to see your changes.
+
 ## Project structure
 
 ```
@@ -80,4 +92,4 @@ src/
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — state management decisions, data flow, auth lifecycle.
 - [API.md](./API.md) — external endpoints used plus the internal service/repository surface.
-- [public/openapi.yaml](./public/openapi.yaml) — OpenAPI 3 spec (Swagger UI at `/swagger.html` during `npm run dev`).
+- [public/openapi.yaml](./public/openapi.yaml) — OpenAPI 3 spec (see [API list (Swagger UI)](#api-list-swagger-ui)).
